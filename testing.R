@@ -3,7 +3,7 @@
 library(tidyverse)
 #for haversine:
 library(pracma)
-
+library(ggplot2)
 #read in data
 ridership_df <- read.csv("/Users/juliadubnoff/Downloads/ridership_simulated.csv")
 otp_df <- read.csv("/Users/juliadubnoff/Downloads/otp_simulated.csv")
@@ -31,13 +31,15 @@ distance <- haversine(c(stops$StopLat[1], stops$StopLng[1]), c(event_lat, event_
 
 
 
+#test
+
 # CURRENT RUN THROUGH OF PROGRAM
 ridership_df <- read.csv("/Users/juliadubnoff/Downloads/ridership_simulated.csv")
 otp_df <- read.csv("/Users/juliadubnoff/Downloads/otp_simulated.csv")
 
 #run through event_analaysis
 occurrences <- as.character(c("2024-05-01", "2024-05-08", "2024-05-15", "2024-05-22", "2024-05-29"))
-cleaned_ridership_df <- ride_data_cleaning(ridership_df, occurrences)
+cleaned_ridership_df <- ride_data_cleaning(ridership_df)
 #extract routes
 routes_df <- route_extraction(otp_df, occurrences)
 #find which routes are viable to the event through location_analysis function
@@ -51,22 +53,6 @@ event_long <- -71.39157664680116
 
 max_distance <- 0.8
 viable_routes <- location_analysis(routes_df, event_lat, event_long, max_distance)
-
-is.na(stops$StopLat[23])
-
-
-#note: this stop SHOULD work 
-#hoch: 41.85631 -71.39157
-#break down location_analysis function
-distance_to_event <- haversine(c(stops$StopLat[19], stops$StopLng[19]),
-                               c(event_lat, event_long))
-if (distance_to_event <= max_distance){
-  nearby_stops_test <- nearby_stops_test %>%
-    rbind(stops[19, ])
-  
-  #nearby_routes_vector <- c(nearby_routes_vector, stops$Route[i])
-}
-
 
 #get a more concise list of stops
 stops<-routes_df %>% 
@@ -128,12 +114,72 @@ nearby_stops <- nearby_stops %>%
 
 
 #find all routes associates with those stops
-routes_to_event <- routes_df %>%
-  filter(Route %in% nearby_routes_vector)
-
-return(as.list(routes_to_event, nearby_stops))
+viable_stops<-find_nearby_stops(routes_df, event_lat, event_long, max_distance)
 
 
+#EXTRA CODE: 
+#filter to make the data set only include routes on the days of occurrence
+#filter(Date %in% occurrences) %>%
+
+#test change_ridership
+
+route_usage <- cleaned_ridership_df %>% 
+  group_by(Date, Hour, Route) %>%
+  summarize(sum_riders=n()) %>%
+  ungroup()%>%
+  #categorize whether the events are in the occurances
+  mutate(event_day=case_when(Date %in% occurrences ~ 1, TRUE ~ 0)) %>%
+  group_by(Route, event_day) %>%
+  summarize(mean_riders=mean(sum_riders)) %>%
+  pivot_wider(names_from=event_day, values_from = mean_riders, names_prefix = "mean_riders_") %>%
+  #evaluate how much ridership changes between event day and non event day for route
+  mutate(difference_of_mean_riders=mean_riders_1-mean_riders_0) %>%
+  #remove NA entries 
+  filter(!is.na(difference_of_mean_riders)) %>%
+  #create entry to designate if nearby route 
+  mutate(is_viable_route = case_when( Route %in% viable_routes ~ 1, TRUE ~ 0))
+
+
+t.test(data=route_usage, difference_of_mean_riders~is_viable_route, alternative="two.sided")
+#this works !
 
 
 
+
+#extract routes
+routes_df <- route_extraction(otp_df, occurrences)
+
+#find which stops are viable to the event through location_analysis function
+nearby_stops <- find_nearby_stops(routes_df, event_lat, event_long, max_distance)
+#find which routes are viable
+viable_routes<-unique(nearby_stops$Route)
+
+#change in route usage during event:
+route_usage_df <- route_usage(cleaned_ridership_df, viable_routes, occurances)
+
+
+route_usage2 <- cleaned_ridership_df %>% 
+  group_by(Date, Hour, Route) %>%
+  summarize(sum_riders=n()) %>%
+  ungroup()%>%
+  #categorize whether the events are in the occurrences
+  mutate(event_day=case_when(Date %in% occurrences ~ "event_day", TRUE ~ "not_event")) %>%
+  pivot_wider(names_from=event_day, values_from = sum_riders, names_prefix = "sum_riders_") 
+
+group_by(Route, event_day) %>%
+  mutate(difference_sum_riders = sum_riders_event_day - sum_riders_not_event)%>%
+  filter(!is.na(difference_sum_riders)) %>%
+  mutate(is_viable_route = case_when( Route %in% viable_routes ~ 1, TRUE ~ 0))
+
+
+test_general<-t.test(data=route_usage_df, difference_of_mean_riders~is_viable_route, alternative="two.sided")
+#PRINT TEST
+print(test_general)
+#' @param occurrences vector listing dates (in standard character form) that the recurring event recurs
+#' 
+#' 
+#'   
+#create additional data sets that could be used for analyses of demographics if a user chose
+usage_demographic_college <- usage_demographics(ridership_df, College, viable_routes, occurances)
+usage_demographic_highschool <- usage_demographics(ridership_df, High.School, viable_routes, occurances)
+usage_demographic_lowinc <- usage_demographics(ridership_df, Low.Income, viable_routes, occurances)

@@ -24,3 +24,14 @@ find_viable_routes <- function(routes_df, stops){
 return(nearby_routes_vector)
 
 }
+
+
+#rewrite function to be much easier
+find_viable_routes <- function(viable_stops){
+  
+  #summarize routes extract values of routes
+  nearby_routes_vector<-unique(viable_stops$Route)
+  return(nearby_routes_vector)
+  
+}
+

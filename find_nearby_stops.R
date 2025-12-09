@@ -1,7 +1,14 @@
-#location analysis
-
-#default max_distance value =0.8 km that designates the radius from an event that a
-#stop could be
+#' find nearby stops 
+#' 
+#' @description finds a data frame of stops and their associated details that 
+#' are near to the event in question
+#' @param routes_df data frame of routes that occur on dates of the occurrences 
+#'  @param event_lat latitude of event location
+#' @param event_long longitude of event location
+#' @param max_distance cutoff distance in kilometers for a stop to be considered
+#' close to an event. 
+#' 
+#' @return data frame of nearby stops 
 find_nearby_stops <- function(routes_df, event_lat, event_long, max_distance){
   
   #get a more concise list of stops
@@ -9,7 +16,7 @@ find_nearby_stops <- function(routes_df, event_lat, event_long, max_distance){
     group_by(Route, Stop) %>%
     summarize(StopLat=mean(StopLat), StopLng=mean(StopLng))
   
-  #create dataframe of nearby_stops
+  #create data frame of nearby_stops
   nearby_stops<-data.frame("Route" = "temp", "Stop" = "temp", 
                            "StopLat" = "temp", "StopLng" ="temp")
 
@@ -26,7 +33,6 @@ find_nearby_stops <- function(routes_df, event_lat, event_long, max_distance){
         if (distance_to_event<=max_distance){
           nearby_stops <- nearby_stops %>%
             rbind(stops[i, ])
-          nearby_routes_vector <- c(nearby_routes_vector, stops$Route[i])
         }                                                                                                                        
     }
 
