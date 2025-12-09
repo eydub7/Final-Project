@@ -1,32 +1,34 @@
 #testing/running code
+
 #load libraries 
 library(tidyverse)
 #for haversine:
 library(pracma)
 library(ggplot2)
+
+
 #read in data
 ridership_df <- read.csv("/Users/juliadubnoff/Downloads/ridership_simulated.csv")
 otp_df <- read.csv("/Users/juliadubnoff/Downloads/otp_simulated.csv")
 
-#test type of date 
-#str(otp_df$Date)
-#Date is a character, so occurrences should be too
+#weekly occurrences starting from first of may as a starting point 
+occurrences <- as.character(c("2024-05-01", "2024-05-08", "2024-05-15", 
+                              "2024-05-22", "2024-05-29"))
 
-#weekly occurances starting from first of may as a starting point 
-occurrences <- as.character(c("2024-05-01", "2024-05-08", "2024-05-15", "2024-05-22", "2024-05-29"))
 
-#this works, check in :
+#check %in% function works how I want it :
 routes_df <- otp_df %>%
   filter(Date %in% occurrences)
 
 otp_df$Date %in% occurrences
 
 
+#test haversine and set event latitude and longitude based on Lippitt Memorial
+#Park, where the farmers market is
 
-#test haversine
-event_lat<-41.79829
-event_long<--71.41475
-distance <- haversine(c(stops$StopLat[1], stops$StopLng[1]), c(event_lat, event_long))
+distance <- haversine(c(stops$StopLat[1], stops$StopLng[1]), c(event_lat, 
+                                                               event_long))
+
 #this works!
 
 
@@ -34,11 +36,16 @@ distance <- haversine(c(stops$StopLat[1], stops$StopLng[1]), c(event_lat, event_
 #test
 
 # CURRENT RUN THROUGH OF PROGRAM
+
 ridership_df <- read.csv("/Users/juliadubnoff/Downloads/ridership_simulated.csv")
 otp_df <- read.csv("/Users/juliadubnoff/Downloads/otp_simulated.csv")
 
-#run through event_analaysis
-occurrences <- as.character(c("2024-05-01", "2024-05-08", "2024-05-15", "2024-05-22", "2024-05-29"))
+#run through event_analysis
+occurrences <- as.character(c("2024-05-01", "2024-05-08", "2024-05-15", 
+                              "2024-05-22", "2024-05-29"))
+
+
+
 cleaned_ridership_df <- ride_data_cleaning(ridership_df)
 #extract routes
 routes_df <- route_extraction(otp_df, occurrences)
@@ -62,6 +69,7 @@ stops<-routes_df %>%
 #create dataframe of nearby_stops
 nearby_stops<-data.frame("Route" = "temp", "Stop" = "temp", 
                          "StopLat" = "temp", "StopLng" ="temp")
+
 #initialize vector with route number
 nearby_routes_vector <- c()
 #cycle through all stops with haversine, 

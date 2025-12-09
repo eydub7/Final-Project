@@ -1,3 +1,11 @@
+setwd("/Users/juliadubnoff/Documents/GitHub/Final-Project/R Scripts")
+
+
+list_files <- c("data_cleaning.R", "route_extraction.R", "find_nearby_stops.R", 
+                "route_usage.R", "usage_demographics.R")
+sapply(list_files, source)
+
+
 #' event analysis
 #' 
 #' @description runs through complete analysis of event that a user wants to 
@@ -28,7 +36,7 @@ event_analysis <- function (otp_df, ridership_df, occurrences,
   }
   
   # clean ridership data
-  ridership_df <- ride_data_cleaning(ridership_df)
+  cleaned_ridership_df <- ride_data_cleaning(ridership_df)
   
   #extract routes that have somen occurrences on event days
   routes_df <- route_extraction(otp_df, occurrences)
@@ -40,7 +48,7 @@ event_analysis <- function (otp_df, ridership_df, occurrences,
   viable_routes<-unique(nearby_stops$Route)
 
   #change in route usage during event:
-  route_usage_df <- route_usage(ridership_df, viable_routes, occurances)
+  route_usage_df <- route_usage(cleaned_ridership_df, viable_routes, occurrences)
   
   #calculate the general t-test
   test_general<-t.test(data=route_usage_df, 
@@ -58,10 +66,9 @@ event_analysis <- function (otp_df, ridership_df, occurrences,
     theme_minimal() +
     theme(axis.text.x = element_blank(), axis.ticks.x=element_blank())
   
-  #demographic analysis of type of rider. this could be edited to evaluate other
-  #demographics 
-  usage_demographic_type <- usage_demographics(ridership_df, Type, 
-                                               viable_routes, occurances)
+  #demographic analysis of type of rider. 
+  usage_demographic_type <- usage_demographics(cleaned_ridership_df, 
+                                               viable_routes, occurrences)
   
   boxplot_by_type<-ggplot(data=usage_demographic_type) + 
     geom_boxplot(aes(x=is_viable_route, 

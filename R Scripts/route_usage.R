@@ -9,13 +9,15 @@
 #' 
 #' @return data frame that can be used in tests and graphs evaluating how much 
 #' ridership changes on event days versus non event days.
-route_usage <- function(cleaned_ridership_df, viable_routes, occurances) {
+route_usage <- function(cleaned_ridership_df, viable_routes, occurrences) {
   
-  route_usage <- ridership_df %>% 
+  route_usage <- cleaned_ridership_df %>% 
+    
+    #convert route to character
+    mutate(Route = as.character(Route))%>%
     
     #sum ridership over hour
     group_by(Date, Hour, Route) %>%
-    summarize(sum_riders=n()) %>%
     ungroup()%>%
     
     #categorize whether the events are in the occurrences
@@ -33,11 +35,13 @@ route_usage <- function(cleaned_ridership_df, viable_routes, occurances) {
     filter(!is.na(difference_of_mean_riders)) %>%
     
     #create entry to designate if nearby route 
-    mutate(is_viable_route = case_when( Route %in% viable_routes ~ "Yes", 
-                                        TRUE ~ "No")) %>%
+    mutate(is_viable_route = case_when( !(Route %in% viable_routes) ~ "No", 
+                                        TRUE ~ "Yes")) %>%
     #convert category is_viable_route to factor
-    mutate(is_viable_route=as.factor(is_viable_route)) 
+    mutate(is_viable_route=as.factor(is_viable_route))  
+    
   
   
    return(route_usage)
 }
+
